@@ -5,6 +5,10 @@
   "use strict";
 
   const OPEN_EVENT = "pwa-link-router:open";
+  const MARKER = "__pwaLinkRouter";
+  // Already wrapped by a previous injection (extension reloaded): the
+  // wrapper only forwards events, so it keeps working as is.
+  if (window.open[MARKER]) return;
   const nativeOpen = window.open;
 
   window.open = function open(url) {
@@ -22,4 +26,5 @@
     }
     return nativeOpen.apply(this, arguments);
   };
+  window.open[MARKER] = true;
 })();
