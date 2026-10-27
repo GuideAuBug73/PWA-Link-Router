@@ -1,0 +1,7 @@
+{
+  "name": "com.pwa_link_router.host",
+  "description": "PWA Link Router native host",
+  "path": "@HOST_PATH@",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://@EXTENSION_ID@/"]
+}
