@@ -97,6 +97,25 @@ chrome.webNavigation.onBeforeNavigate.addListener((details) => {
 
 chrome.tabs.onRemoved.addListener((tabId) => pendingTabs.delete(tabId));
 
+// Pages already open when the extension is installed, updated or reloaded
+// keep a copy of the content scripts that can no longer reach the
+// extension. Inject fresh copies so links keep being intercepted without
+// having to reopen the PWAs.
+async function injectIntoOpenTabs() {
+  for (const script of chrome.runtime.getManifest().content_scripts || []) {
+    const tabs = await chrome.tabs.query({ url: script.matches });
+    for (const tab of tabs) {
+      chrome.scripting
+        .executeScript({
+          target: { tabId: tab.id, allFrames: Boolean(script.all_frames) },
+          files: script.js,
+          world: script.world || "ISOLATED",
+        })
+        .catch(() => {});
+    }
+  }
+}
+
 // Context menu entry on links, for the cases where the user wants to choose.
 
 async function updateMenu() {
@@ -106,6 +125,7 @@ async function updateMenu() {
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
+  injectIntoOpenTabs();
   chrome.contextMenus.create({ id: MENU_ID, title: "Ouvrir le lien ailleurs", contexts: ["link"] }, () => {
     void chrome.runtime.lastError;
     updateMenu();

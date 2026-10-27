@@ -33,6 +33,23 @@ function readOpened(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, "utf8").trim().split("\n") : [];
 }
 
+// Same as the "Reload" button of chrome://extensions (developer mode is
+// required, otherwise the reloaded extension stays disabled).
+async function reloadExtension(context) {
+  const page = await context.newPage();
+  await page.goto("chrome://extensions");
+  await page.evaluate(
+    (id) =>
+      new Promise((resolve) =>
+        chrome.developerPrivate.updateProfileConfiguration({ inDeveloperMode: true }, () =>
+          chrome.developerPrivate.reload(id, { failQuietly: true }, resolve)
+        )
+      ),
+    EXTENSION_ID
+  );
+  await page.close();
+}
+
 async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "plr-e2e-"));
   const opened = path.join(tmp, "opened.txt");
@@ -132,6 +149,25 @@ async function main() {
     await (await tab).close();
     await page.waitForTimeout(500);
     assert.strictEqual(readOpened(opened).length, routedCount);
+
+    // Reloading the extension (update, or "Reload" in edge://extensions)
+    // must keep intercepting in pages that were already open, without
+    // falling back to the safety net and its flash.
+    await worker.evaluate(() => chrome.storage.sync.set({ onlyInPwa: false }));
+    await reloadExtension(context);
+    await page.waitForTimeout(2000);
+    let flashed = false;
+    const onPage = () => (flashed = true);
+    context.on("page", onPage);
+    await page.click("#external");
+    await page.evaluate(() => window.open("https://example.com/after-reload"));
+    await page.waitForTimeout(1000);
+    context.off("page", onPage);
+    assert.ok(!flashed, "no Edge window should open after the extension is reloaded");
+    assert.deepStrictEqual(readOpened(opened).slice(-2).sort(), [
+      "https://example.com/after-reload",
+      "https://example.com/mail-link",
+    ]);
 
     console.log("e2e OK");
   } finally {

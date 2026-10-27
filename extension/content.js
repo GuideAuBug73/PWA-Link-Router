@@ -5,6 +5,13 @@
 
   const { routeTarget, withDefaults } = globalThis.PwaLinkRouterRules;
   const OPEN_EVENT = "pwa-link-router:open";
+  const TEARDOWN_EVENT = "pwa-link-router:teardown";
+
+  // When the extension is reloaded or updated, the copy of this script
+  // already running in open pages is cut off from the extension and a new
+  // copy is injected next to it (see background.js). Tell older copies to
+  // step aside.
+  document.dispatchEvent(new CustomEvent(TEARDOWN_EVENT));
 
   // Decisions have to be synchronous (preventDefault), so keep a cached copy
   // of the settings, starting from the defaults until storage answers.
@@ -22,11 +29,29 @@
     "(display-mode: standalone), (display-mode: window-controls-overlay), (display-mode: minimal-ui)"
   );
 
+  function extensionAlive() {
+    try {
+      return Boolean(chrome.runtime && chrome.runtime.id);
+    } catch (e) {
+      return false;
+    }
+  }
+
   function route(url) {
+    if (!extensionAlive()) {
+      teardown();
+      return false;
+    }
     if (settings.onlyInPwa && !pwaQuery.matches) return false;
     const target = routeTarget(url, location.href, settings);
     if (!target) return false;
-    chrome.runtime.sendMessage({ type: "open", url: target });
+    try {
+      chrome.runtime.sendMessage({ type: "open", url: target });
+    } catch (e) {
+      // Cut off from the extension: let Edge handle the link.
+      teardown();
+      return false;
+    }
     return true;
   }
 
@@ -51,15 +76,24 @@
     }
   }
 
-  // Capture phase on window: we run before the page's own handlers.
-  window.addEventListener("click", onClick, true);
-  window.addEventListener("auxclick", onClick, true);
-
   // window.open calls, forwarded synchronously by page.js. Cancelling the
   // event tells page.js not to open the window.
-  document.addEventListener(OPEN_EVENT, (event) => {
+  function onOpen(event) {
     if (typeof event.detail === "string" && route(event.detail)) {
       event.preventDefault();
     }
-  });
+  }
+
+  function teardown() {
+    window.removeEventListener("click", onClick, true);
+    window.removeEventListener("auxclick", onClick, true);
+    document.removeEventListener(OPEN_EVENT, onOpen);
+    document.removeEventListener(TEARDOWN_EVENT, teardown);
+  }
+
+  // Capture phase on window: we run before the page's own handlers.
+  window.addEventListener("click", onClick, true);
+  window.addEventListener("auxclick", onClick, true);
+  document.addEventListener(OPEN_EVENT, onOpen);
+  document.addEventListener(TEARDOWN_EVENT, teardown);
 })();
