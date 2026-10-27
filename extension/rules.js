@@ -10,6 +10,9 @@
     command: "",
     // Only act inside installed PWA windows, not in regular Edge tabs.
     onlyInPwa: true,
+    // Catch the windows that slip through the click interception, at the
+    // cost of a short flash.
+    safetyNet: true,
     // Hosts that must keep opening in Edge: the apps themselves (pop-out
     // windows, meeting links) and the Microsoft sign-in pages.
     keepInEdge: [
@@ -27,9 +30,21 @@
     ],
   };
 
+  const BROWSER_NAMES = {
+    default: "le navigateur par défaut",
+    brave: "Brave",
+    chrome: "Google Chrome",
+    chromium: "Chromium",
+    firefox: "Firefox",
+    vivaldi: "Vivaldi",
+    custom: "le navigateur personnalisé",
+  };
+
   function parseUrl(url, base) {
     try {
-      return new URL(url, base);
+      // An empty or invalid base makes the URL constructor throw, even for
+      // absolute URLs.
+      return base ? new URL(url, base) : new URL(url);
     } catch (e) {
       return null;
     }
@@ -65,7 +80,7 @@
     return Object.assign({}, DEFAULT_SETTINGS, stored || {});
   }
 
-  const api = { DEFAULT_SETTINGS, hostMatches, routeTarget, withDefaults };
+  const api = { BROWSER_NAMES, DEFAULT_SETTINGS, hostMatches, routeTarget, withDefaults };
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
   } else {

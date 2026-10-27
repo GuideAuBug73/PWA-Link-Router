@@ -30,6 +30,23 @@ Navigateurs reconnus : navigateur par défaut du système (`xdg-open`), Brave,
 Google Chrome, Chromium, Firefox, Vivaldi, ou une commande personnalisée
 (`{url}` est remplacé par le lien).
 
+Si un lien échappe malgré tout à l'interception (par exemple via « Ouvrir dans
+un nouvel onglet »), un filet de sécurité ferme la fenêtre Edge dès qu'elle
+apparaît et envoie le lien au navigateur choisi. Le clic droit sur un lien
+propose aussi « Ouvrir le lien dans Brave » (ou le navigateur choisi).
+
+## Réglages
+
+Page d'options : `edge://extensions` > PWA Link Router > Détails > Options
+de l'extension. On y règle :
+
+- le navigateur de destination (avec un bouton de test) ;
+- une commande personnalisée, si votre navigateur n'est pas dans la liste ;
+- l'activation de la redirection, la restriction aux fenêtres de PWA et le
+  filet de sécurité ;
+- la liste des sites qui restent dans Edge (`*.sharepoint.com` couvre le
+  domaine et ses sous-domaines).
+
 ## Installation
 
 1. Installer l'hôte natif :
