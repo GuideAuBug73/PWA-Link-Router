@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>PWA Link Router</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #ffffff;
+      --fg: #1f2328;
+      --muted: #59636e;
+      --border: #d1d9e0;
+      --accent: #0969da;
+      --ok: #1a7f37;
+      --error: #cf222e;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1b1d21;
+        --fg: #e6e8eb;
+        --muted: #9aa3ad;
+        --border: #3a3f46;
+        --accent: #4c9aff;
+        --ok: #3fb950;
+        --error: #f85149;
+      }
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 14px/1.5 system-ui, sans-serif;
+    }
+    main {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 4px;
+    }
+    .subtitle {
+      color: var(--muted);
+      margin: 0 0 24px;
+    }
+    section {
+      border-top: 1px solid var(--border);
+      padding: 16px 0;
+    }
+    label.row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin: 8px 0;
+    }
+    label.row input {
+      margin-top: 3px;
+    }
+    .hint {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    select, input[type="text"], textarea {
+      box-sizing: border-box;
+      width: 100%;
+      font: inherit;
+      color: inherit;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 8px;
+    }
+    textarea {
+      min-height: 180px;
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+    }
+    .field {
+      margin: 12px 0;
+    }
+    .field > span {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    button {
+      font: inherit;
+      color: inherit;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .status {
+      font-size: 13px;
+    }
+    .status.ok {
+      color: var(--ok);
+    }
+    .status.error {
+      color: var(--error);
+    }
+    code {
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+    }
+    [hidden] {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>PWA Link Router</h1>
+    <p class="subtitle">Les liens des PWA Outlook et Teams s'ouvrent dans le navigateur de votre choix.</p>
+
+    <p id="host-status" class="status"></p>
+
+    <section>
+      <label class="row">
+        <input type="checkbox" id="enabled">
+        <span>Activer la redirection des liens</span>
+      </label>
+
+      <div class="field">
+        <span>Navigateur de destination</span>
+        <select id="browser"></select>
+      </div>
+
+      <div class="field" id="command-field" hidden>
+        <span>Commande personnalisée</span>
+        <input type="text" id="command" placeholder="firefox --new-tab {url}" spellcheck="false">
+        <span class="hint"><code>{url}</code> est remplacé par le lien. Sans <code>{url}</code>, le lien est ajouté à la fin.</span>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="primary" id="test">Tester avec example.com</button>
+        <span id="test-status" class="status"></span>
+      </div>
+    </section>
+
+    <section>
+      <label class="row">
+        <input type="checkbox" id="onlyInPwa">
+        <span>Uniquement dans les fenêtres de PWA
+          <span class="hint">Les onglets Edge normaux ne sont pas touchés.</span>
+        </span>
+      </label>
+      <label class="row">
+        <input type="checkbox" id="safetyNet">
+        <span>Filet de sécurité
+          <span class="hint">Si un lien échappe à l'interception (par exemple « Ouvrir dans un nouvel onglet »), la fenêtre Edge est fermée dès qu'elle apparaît et le lien part dans le navigateur choisi.</span>
+        </span>
+      </label>
+    </section>
+
+    <section>
+      <div class="field">
+        <span>Sites qui restent dans Edge</span>
+        <textarea id="keepInEdge" spellcheck="false"></textarea>
+        <span class="hint">Un site par ligne. <code>*.sharepoint.com</code> couvre le domaine et tous ses sous-domaines.</span>
+      </div>
+      <div class="actions">
+        <button type="button" id="reset-keep">Rétablir la liste par défaut</button>
+      </div>
+    </section>
+
+    <p id="save-status" class="status"></p>
+  </main>
+  <script src="rules.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

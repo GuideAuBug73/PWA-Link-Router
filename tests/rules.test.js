@@ -50,3 +50,8 @@ test("custom keep list", () => {
   assert.strictEqual(routeTarget("https://contoso.sharepoint.com/doc", TEAMS, custom), null);
   assert.strictEqual(routeTarget("https://login.microsoftonline.com/", TEAMS, custom), "https://login.microsoftonline.com/");
 });
+
+test("works without a page URL", () => {
+  assert.strictEqual(routeTarget("https://example.com/x", "", settings), "https://example.com/x");
+  assert.strictEqual(routeTarget("/relative", "", settings), null);
+});

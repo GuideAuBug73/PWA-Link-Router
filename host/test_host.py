@@ -24,12 +24,13 @@ def unframe(raw):
     return messages
 
 
-def run_host(*messages):
+def run_host(*messages, env=None):
     result = subprocess.run(
         [sys.executable, HOST],
         input=b"".join(frame(m) for m in messages),
         capture_output=True,
         timeout=10,
+        env=env,
     )
     return unframe(result.stdout)
 
@@ -61,6 +62,20 @@ class HostTest(unittest.TestCase):
         for url in ("file:///etc/passwd", "javascript:alert(1)", "", "ms-teams:foo"):
             (response,) = run_host({"action": "open", "url": url, "browser": "default"})
             self.assertFalse(response["ok"], url)
+
+    def test_finds_browsers_outside_path(self):
+        # Simulates Edge started without the snap/flatpak dirs in its PATH.
+        with tempfile.TemporaryDirectory() as home:
+            bin_dir = os.path.join(home, ".local", "share", "flatpak", "exports", "bin")
+            os.makedirs(bin_dir)
+            fake = os.path.join(bin_dir, "com.brave.Browser")
+            with open(fake, "w") as f:
+                f.write("#!/bin/sh\n")
+            os.chmod(fake, 0o755)
+            env = {"HOME": home, "PATH": "/usr/bin:/bin"}
+            (response,) = run_host({"action": "list"}, env=env)
+            brave = next(b for b in response["browsers"] if b["id"] == "brave")
+            self.assertTrue(brave["available"])
 
     def test_unknown_browser(self):
         (response,) = run_host({"action": "open", "url": "https://example.com", "browser": "netscape"})
