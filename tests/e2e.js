@@ -20,6 +20,19 @@ const PAGE = `<!doctype html><html><body>
   <iframe id="frame" srcdoc='<a id="in-frame" href="https://example.com/in-frame" target="_blank">frame</a>'></iframe>
 </body></html>`;
 
+// A page the content script does not run on, to exercise the safety net.
+const UNCOVERED_PAGE = `<!doctype html><a id="escaped" href="https://example.com/escaped" target="_blank">escaped</a>`;
+
+function pageFor(url) {
+  if (url.includes("/mail/")) return PAGE;
+  if (url.startsWith("https://example.org/")) return UNCOVERED_PAGE;
+  return "<p>other</p>";
+}
+
+function readOpened(file) {
+  return fs.existsSync(file) ? fs.readFileSync(file, "utf8").trim().split("\n") : [];
+}
+
 async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "plr-e2e-"));
   const opened = path.join(tmp, "opened.txt");
@@ -39,8 +52,8 @@ async function main() {
     args: [`--disable-extensions-except=${EXTENSION}`, `--load-extension=${EXTENSION}`],
   });
   try {
-    await context.route(/^https:\/\/(outlook\.office\.com|login\.microsoftonline\.com|teams\.microsoft\.com|example\.com)\//, (route) =>
-      route.fulfill({ contentType: "text/html", body: route.request().url().includes("/mail/") ? PAGE : "<p>other</p>" })
+    await context.route(/^https:\/\/(example\.org|outlook\.office\.com|login\.microsoftonline\.com|teams\.microsoft\.com|example\.com)\//, (route) =>
+      route.fulfill({ contentType: "text/html", body: pageFor(route.request().url()) })
     );
 
     let [worker] = context.serviceWorkers();
@@ -82,13 +95,43 @@ async function main() {
     await (await teams).close();
     assert.strictEqual(fs.readFileSync(opened, "utf8").trim().split("\n").length, 5);
 
+    // Safety net: a window the content script missed is closed and routed.
+    const uncovered = await context.newPage();
+    await uncovered.goto("https://example.org/app");
+    const escaped = context.waitForEvent("page");
+    await uncovered.click("#escaped");
+    const escapedPage = await escaped;
+    await escapedPage.waitForEvent("close", { timeout: 5000 });
+    await page.waitForTimeout(300);
+    assert.strictEqual(readOpened(opened).at(-1), "https://example.com/escaped");
+    await uncovered.close();
+
+    // Options page: host detected, settings saved.
+    const options = await context.newPage();
+    await options.goto(`chrome-extension://${EXTENSION_ID}/options.html`);
+    await options.waitForSelector("#host-status.ok");
+    assert.ok(await options.$('#browser option[value="brave"]'));
+    assert.strictEqual(await options.inputValue("#browser"), "custom");
+    assert.ok(await options.isVisible("#command"));
+    await options.click("#test");
+    await options.waitForSelector("#test-status.ok");
+    assert.strictEqual(readOpened(opened).at(-1), "https://example.com/");
+    await options.selectOption("#browser", "firefox");
+    await options.waitForSelector("#save-status.ok");
+    assert.ok(!(await options.isVisible("#command")));
+    assert.strictEqual(await worker.evaluate(() => chrome.storage.sync.get("browser").then((s) => s.browser)), "firefox");
+    await options.selectOption("#browser", "custom");
+    await options.close();
+    const routedCount = readOpened(opened).length;
+
     // With the PWA restriction on, a regular tab is left alone.
     await worker.evaluate(() => chrome.storage.sync.set({ onlyInPwa: true }));
     await page.waitForTimeout(300);
     const tab = context.waitForEvent("page");
     await page.click("#external");
     await (await tab).close();
-    assert.strictEqual(fs.readFileSync(opened, "utf8").trim().split("\n").length, 5);
+    await page.waitForTimeout(500);
+    assert.strictEqual(readOpened(opened).length, routedCount);
 
     console.log("e2e OK");
   } finally {
