@@ -1,11 +1,55 @@
 {
   "manifest_version": 3,
   "name": "PWA Link Router",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Ouvre les liens des PWA Outlook et Teams dans le navigateur de votre choix.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApiXgakFE1jA2wqgWtPi2i7jToqf1UVxh/Vmnql9CIuSWcYWAv8CSSvaQARIvsmbCQvg3XRuEt20+HoEbP4kABW9Wm5tGdSMd9v3+0FxR+Kg2Mu4nQRvnSR+cR3bZlpFh1HIZtNjh072JBnT5CiKTWKYAsKoFGumwDm+lIrSlDepXdHFbqKH90YAAEeggKLQp8sXhIKrNWWc5lcffyhpXijo+Dq3+CA7ECvruAMX+KyKhi39VBjweSoI89dxP2Bhef45wiQGo/nDovizkiKQH+S6Lj6jSHvZ55/zvI4coSPwLombRGGZ616oSgD4lzXVxRIRJU2CVj0YFt7dzB6hIIwIDAQAB",
-  "permissions": ["nativeMessaging", "storage"],
+  "permissions": [
+    "nativeMessaging",
+    "storage"
+  ],
   "background": {
     "service_worker": "background.js"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://outlook.office.com/*",
+        "https://outlook.office365.com/*",
+        "https://outlook.live.com/*",
+        "https://outlook.cloud.microsoft/*",
+        "https://teams.microsoft.com/*",
+        "https://teams.live.com/*",
+        "https://teams.cloud.microsoft/*"
+      ],
+      "js": [
+        "page.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
+    },
+    {
+      "matches": [
+        "https://outlook.office.com/*",
+        "https://outlook.office365.com/*",
+        "https://outlook.live.com/*",
+        "https://outlook.cloud.microsoft/*",
+        "https://teams.microsoft.com/*",
+        "https://teams.live.com/*",
+        "https://teams.cloud.microsoft/*"
+      ],
+      "js": [
+        "rules.js",
+        "content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
+    }
+  ],
+  "minimum_chrome_version": "111"
 }
