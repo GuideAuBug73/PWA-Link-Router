@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#0891b2"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <!-- App window, open at the top right where the link leaves it -->
+  <path d="M60 34H34a12 12 0 0 0-12 12v48a12 12 0 0 0 12 12h48a12 12 0 0 0 12-12V68"
+        fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M22 54H66" stroke="#ffffff" stroke-width="8" stroke-linecap="round" opacity="0.55"/>
+  <!-- Outgoing arrow -->
+  <path d="M56 72L102 26M74 26h28v28"
+        fill="none" stroke="#fb923c" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
