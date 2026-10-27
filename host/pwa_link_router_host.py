@@ -34,7 +34,7 @@ ALLOWED_SCHEMES = {"http", "https"}
 # Candidate executables for each known browser, tried in order.
 BROWSERS = {
     "default": ("Navigateur par défaut du système", ["xdg-open"]),
-    "brave": ("Brave", ["brave-browser", "brave-browser-stable", "brave"]),
+    "brave": ("Brave", ["brave-browser", "brave-browser-stable", "brave", "com.brave.Browser"]),
     "chrome": ("Google Chrome", ["google-chrome", "google-chrome-stable"]),
     "chromium": ("Chromium", ["chromium", "chromium-browser"]),
     "firefox": ("Firefox", ["firefox"]),
@@ -60,10 +60,25 @@ def write_message(stream, message):
     stream.flush()
 
 
+# Edge started from the desktop may not have the snap and flatpak
+# directories in its PATH (Brave is often installed as a snap).
+EXTRA_PATH_DIRS = [
+    "/snap/bin",
+    "/var/lib/flatpak/exports/bin",
+    os.path.expanduser("~/.local/share/flatpak/exports/bin"),
+    os.path.expanduser("~/.local/bin"),
+]
+
+
+def search_path():
+    dirs = os.environ.get("PATH", "").split(os.pathsep)
+    return os.pathsep.join(dirs + [d for d in EXTRA_PATH_DIRS if d not in dirs])
+
+
 def find_executable(browser_id):
     _, candidates = BROWSERS[browser_id]
     for candidate in candidates:
-        path = shutil.which(candidate)
+        path = shutil.which(candidate, path=search_path())
         if path:
             return path
     return None
